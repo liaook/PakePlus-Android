@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="light dark">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#F2F3F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E0F11" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="打卡">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23FF6A00'/%3E%3Cpath d='M18 33l10 10 18-20' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<title>每日打卡</title>
+<style>
+  :root {
+    --bg: #F2F3F5;
+    --card: #FFFFFF;
+    --ink: #17181A;
+    --ink-2: #4A4E55;
+    --muted: #9AA0A8;
+    --accent: #FF6A00;
+    --accent-ink: #FFFFFF;
+    --accent-soft: rgba(255, 106, 0, .12);
+    --accent-glow: rgba(255, 106, 0, .35);
+    --chip: rgba(0, 0, 0, .05);
+    --line: rgba(0, 0, 0, .06);
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+    --radius: 20px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E0F11;
+      --card: #1B1C1F;
+      --ink: #F2F3F5;
+      --ink-2: #C6CAD0;
+      --muted: #6E737A;
+      --accent: #FF7A1A;
+      --accent-soft: rgba(255, 122, 26, .16);
+      --accent-glow: rgba(255, 122, 26, .4);
+      --chip: rgba(255, 255, 255, .08);
+      --line: rgba(255, 255, 255, .07);
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "MiSans", -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+  .app {
+    max-width: 420px;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: calc(12px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* ---------- 头部 ---------- */
+  .date-line {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 2px;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  .streak-pill {
+    flex: none;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 999px;
+    letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .streak-pill b { font-size: 16px; font-weight: 700; }
+
+  /* ---------- 类型统计 ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .stat {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 13px 14px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    cursor: pointer;
+    transition: transform .12s;
+  }
+  .stat:active { transform: scale(.98); }
+  .stat-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .stat .label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat .value {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .stat .value small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+  .stat.empty-stat {
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 14px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--accent-soft);
+    min-height: 56px;
+  }
+
+  /* ---------- 日历 ---------- */
+  .cal {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 18px 12px 16px;
+    box-shadow: var(--shadow);
+    flex: 1;
+  }
+  .cal-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 2px 8px 14px;
+  }
+  .cal-title { display: flex; align-items: baseline; gap: 7px; }
+  .cal-title .yr {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .08em;
+    font-variant-numeric: tabular-nums;
+  }
+  .cal-title .mo {
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  .nav { display: flex; gap: 8px; align-items: center; }
+  .nav button {
+    border: 0;
+    background: var(--chip);
+    color: var(--ink-2);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .12s, background .15s, color .15s;
+  }
+  .nav button svg { width: 15px; height: 15px; display: block; }
+  .nav button:active { transform: scale(.9); background: var(--accent-soft); color: var(--accent); }
+  .nav .today-btn {
+    width: auto;
+    padding: 0 14px;
+    font-size: 13px;
+    border-radius: 17px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+
+  .weekdays, .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .weekdays { margin-bottom: 4px; }
+  .weekdays span {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .02em;
+    color: var(--muted);
+    padding: 6px 0;
+    transition: color .2s;
+  }
+  .weekdays span.is-today { color: var(--accent); font-weight: 700; }
+  .grid { grid-auto-rows: minmax(46px, auto); }
+
+  .cell {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    min-height: 46px;
+    animation: cellIn .28s ease backwards;
+    animation-delay: calc(var(--i, 0) * 6ms);
+  }
+  .cell.empty { cursor: default; animation: none; }
+  @keyframes cellIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  .num {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+    z-index: 1;
+    transition: background .2s, color .2s, box-shadow .2s, transform .15s;
+  }
+  .cell:active .num { transform: scale(.86); }
+
+  .cell[data-state="past"] .num { color: var(--ink-2); }
+  .cell[data-state="future"] { cursor: default; }
+  .cell[data-state="future"] .num { color: var(--muted); opacity: .45; }
+  .cell[data-wd="6"] .num,
+  .cell[data-wd="0"] .num { color: var(--muted); }
+
+  .cell[data-state="today"] .num {
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+    background: var(--accent-soft);
+  }
+  .cell[data-state="checked"] .num {
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+
+  /* 打卡成功：波纹 + 弹跳 */
+  .cell.pop .num { animation: pop .45s cubic-bezier(.34, 1.56, .64, 1); }
+  .cell.pop::after {
+    content: "";
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--rc, var(--accent));
+    opacity: .5;
+    animation: ripple .5s ease-out forwards;
+    z-index: 0;
+  }
+  @keyframes pop {
+    0% { transform: scale(.7); }
+    55% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+  @keyframes ripple {
+    from { transform: scale(1); opacity: .5; }
+    to { transform: scale(2.1); opacity: 0; }
+  }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: -1px;
+  }
+  .legend .l-today { box-shadow: inset 0 0 0 1.5px var(--accent); background: var(--accent-soft); }
+
+  /* ---------- 底部打卡 ---------- */
+  footer { display: flex; flex-direction: column; gap: 8px; }
+  .cta {
+    border: 0;
+    border-radius: 28px;
+    height: 54px;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    cursor: pointer;
+    transition: transform .12s, background .2s, color .2s;
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 0 6px 18px rgba(255, 106, 0, .28);
+    font-family: inherit;
+  }
+  .cta:active { transform: scale(.97); }
+  .cta.done {
+    background: var(--accent-soft);
+    color: var(--accent);
+    box-shadow: none;
+  }
+  .hint { text-align: center; font-size: 12px; color: var(--muted); }
+
+  /* ---------- 类型选择面板 ---------- */
+  .sheet-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s, visibility .25s;
+    z-index: 40;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .sheet-mask.open { opacity: 1; visibility: visible; }
+  .sheet {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.32, .72, 0, 1);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, .18);
+  }
+  .sheet-mask.open .sheet { transform: none; }
+  .grabber {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--chip);
+    margin: 0 auto 12px;
+  }
+  .sheet-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 0 2px;
+  }
+  .sheet-title b { font-size: 17px; font-weight: 700; }
+  .sheet-title span { font-size: 13px; color: var(--muted); }
+  .sheet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+    max-height: 44vh;
+    overflow-y: auto;
+  }
+  .type-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 52px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--chip);
+    padding: 0 14px;
+    font: inherit;
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .12s, background .15s;
+    flex: none;
+  }
+  .type-row:active { transform: scale(.98); }
+  .tr-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--c, var(--muted));
+    flex: none;
+  }
+  .tr-name { flex: 1; text-align: left; font-size: 15px; font-weight: 600; }
+  .tr-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 0 1.5px var(--muted);
+    transition: background .15s, box-shadow .15s;
+  }
+  .tr-check svg { width: 14px; height: 14px; opacity: 0; transition: opacity .15s; }
+  .type-row.on .tr-check {
+    background: var(--c, var(--accent));
+    box-shadow: none;
+  }
+  .type-row.on .tr-check svg { opacity: 1; }
+  .type-row.add-row {
+    justify-content: center;
+    height: 46px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+
+  /* ---------- 提示 ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(130px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 12px);
+    background: rgba(23, 24, 26, .88);
+    color: #fff;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 22px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    z-index: 50;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    white-space: nowrap;
+    max-width: 86vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-height: 740px) {
+    .grid { grid-auto-rows: minmax(40px, auto); }
+    h1 { font-size: 24px; }
+    .stat { padding: 10px 12px; gap: 4px; }
+    .stat .value { font-size: 21px; }
+    .cell { min-height: 40px; }
+    .sheet-list { max-height: 38vh; }
+  }
+</style>
+</head>
+<body>
+<p data-aigc-mark="1" style="margin:0 0 8px;font-size:10px;line-height:1.3;color:#6b6560;font-weight:400;">AI生成</p>
+
+<div class="app">
+  <header>
+    <div class="date-line" id="dateLine"></div>
+    <div class="title-row">
+      <h1>每日打卡</h1>
+      <div class="streak-pill" id="streakPill"></div>
+    </div>
+  </header>
+
+  <section class="stats" id="stats"></section>
+
+  <section class="cal">
+    <div class="cal-head">
+      <div class="cal-title"><span class="yr" id="calYear"></span><span class="mo" id="calMonth"></span></div>
+      <div class="nav">
+        <button class="today-btn" id="btnToday" hidden>今天</button>
+        <button id="btnPrev" aria-label="上一月">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button id="btnNext" aria-label="下一月">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="weekdays">
+      <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <footer>
+    <button class="cta" id="cta">打卡今天</button>
+    <p class="hint">点选日期，选择要打卡的类型</p>
+    <p class="hint" id="installHint" hidden>浏览器菜单选「添加到主屏幕」，全屏像 App 一样使用</p>
+  </footer>
+</div>
+
+<div class="sheet-mask" id="sheetMask">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-title" id="sheetTitle"></div>
+    <div class="sheet-list" id="sheetList"></div>
+    <button class="cta" id="sheetDone">完成</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'daily-checkin.v2';
+  var OLD_KEY = 'daily-checkin.v1';
+  var WEEK_CN = ['日', '一', '二', '三', '四', '五', '六'];
+  var DEFAULT_TYPES = [
+    { id: 'self',   name: '自律', color: '#7C5CFF' },
+    { id: 'health', name: '健康', color: '#00A35C' },
+    { id: 'study',  name: '学习', color: '#2E7CF6' },
+    { id: 'sport',  name: '运动', color: '#E8446A' }
+  ];
+  var PALETTE = ['#7C5CFF', '#00A35C', '#2E7CF6', '#E8446A', '#0E9F9A', '#D4397A', '#5B8DEF', '#B4437F'];
+
+  function strip(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function fmt(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+  }
+  function parseKey(key) { var p = key.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function rgba(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+
+  var TODAY = strip(new Date());
+  var TODAY_KEY = fmt(TODAY);
+
+  function freshState() {
+    return {
+      v: 2,
+      types: DEFAULT_TYPES.map(function (t) { return { id: t.id, name: t.name, color: t.color }; }),
+      checkins: {}
+    };
+  }
+
+  function loadState() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (raw && raw.v === 2 && Array.isArray(raw.types) && raw.checkins && typeof raw.checkins === 'object') return raw;
+    } catch (e) {}
+    try {
+      // 旧版数据迁移：此前的打卡全部记到「自律」名下
+      var old = JSON.parse(localStorage.getItem(OLD_KEY) || 'null');
+      if (Array.isArray(old)) {
+        var s = freshState();
+        old.forEach(function (k) { s.checkins[k] = ['self']; });
+        try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+        return s;
+      }
+    } catch (e) {}
+    return freshState();
+  }
+
+  var state = loadState();
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function typeById(id) {
+    for (var i = 0; i < state.types.length; i++) if (state.types[i].id === id) return state.types[i];
+    return null;
+  }
+  function dayTypes(key) {
+    var ids = state.checkins[key] || [];
+    var cols = [], list = [];
+    for (var i = 0; i < ids.length; i++) {
+      var t = typeById(ids[i]);
+      if (t) { list.push(t); cols.push(t.color); }
+    }
+    return { list: list, cols: cols };
+  }
+  function hasCheck(key) { return dayTypes(key).cols.length > 0; }
+
+  var viewY = TODAY.getFullYear();
+  var viewM = TODAY.getMonth();
+  var popKey = null, popColor = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var grid = $('grid'), calYear = $('calYear'), calMonth = $('calMonth');
+  var stats = $('stats'), legend = $('legend'), cta = $('cta'), toast = $('toast');
+  var sheetMask = $('sheetMask'), sheetTitle = $('sheetTitle'), sheetList = $('sheetList');
+  var sheetKey = null;
+
+  var HAS_CONIC = !!(window.CSS && CSS.supports && CSS.supports('background', 'conic-gradient(#000,#fff)'));
+  function conicBg(cols) {
+    if (cols.length === 1 || !HAS_CONIC) return cols[0];
+    var seg = 100 / cols.length, p = [];
+    for (var i = 0; i < cols.length; i++) p.push(cols[i] + ' ' + (i * seg).toFixed(2) + '% ' + ((i + 1) * seg).toFixed(2) + '%');
+    return 'conic-gradient(' + p.join(',') + ')';
+  }
+
+  function streakCount() {
+    var n = 0, d = new Date(TODAY);
+    if (!hasCheck(TODAY_KEY)) d.setDate(d.getDate() - 1);
+    while (hasCheck(fmt(d))) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+
+  function renderHeader() {
+    $('dateLine').textContent = TODAY.getFullYear() + '年' + (TODAY.getMonth() + 1) + '月' +
+      TODAY.getDate() + '日 星期' + WEEK_CN[TODAY.getDay()];
+    $('streakPill').innerHTML = '连续 <b>' + streakCount() + '</b> 天';
+  }
+
+  function renderStats() {
+    if (!state.types.length) {
+      stats.innerHTML = '<div class="stat empty-stat" id="emptyStat">＋ 新增打卡类型</div>';
+      return;
+    }
+    var counts = {};
+    state.types.forEach(function (t) { counts[t.id] = 0; });
+    Object.keys(state.checkins).forEach(function (k) {
+      (state.checkins[k] || []).forEach(function (id) {
+        if (id in counts) counts[id]++;
+      });
+    });
+    stats.innerHTML = state.types.map(function (t) {
+      return '<div class="stat" data-id="' + t.id + '">' +
+        '<div class="stat-top"><i class="dot" style="background:' + t.color + '"></i>' +
+        '<span class="label">' + esc(t.name) + '</span></div>' +
+        '<div class="value" style="color:' + t.color + '">' + counts[t.id] + '<small>次</small></div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function renderLegend() {
+    legend.innerHTML = state.types.map(function (t) {
+      return '<span><i style="background:' + t.color + '"></i>' + esc(t.name) + '</span>';
+    }).join('') + '<span><i class="l-today"></i>今天</span>';
+  }
+
+  function renderCta() {
+    if (hasCheck(TODAY_KEY)) {
+      cta.textContent = '今天已打卡';
+      cta.classList.add('done');
+    } else {
+      cta.textContent = '打卡今天';
+      cta.classList.remove('done');
+    }
+  }
+
+  function renderCal() {
+    calYear.textContent = viewY;
+    calMonth.textContent = (viewM + 1) + '月';
+    var viewingCurrent = (viewY === TODAY.getFullYear() && viewM === TODAY.getMonth());
+    $('btnToday').hidden = viewingCurrent;
+
+    var wdEls = document.querySelectorAll('.weekdays span');
+    var todayWd = (TODAY.getDay() + 6) % 7;
+    for (var w = 0; w < wdEls.length; w++) {
+      wdEls[w].classList.toggle('is-today', viewingCurrent && w === todayWd);
+    }
+
+    grid.innerHTML = '';
+    var first = new Date(viewY, viewM, 1);
+    var days = new Date(viewY, viewM + 1, 0).getDate();
+    var lead = (first.getDay() + 6) % 7; // 周一为一列
+
+    for (var i = 0; i < lead; i++) {
+      var e = document.createElement('div');
+      e.className = 'cell empty';
+      grid.appendChild(e);
+    }
+
+    var idx = 0;
+    for (var day = 1; day <= days; day++) {
+      var date = new Date(viewY, viewM, day);
+      var key = fmt(date);
+      var isToday = key === TODAY_KEY;
+      var isFuture = strip(date) > TODAY;
+      var info = dayTypes(key);
+      var isChecked = !isFuture && info.cols.length > 0;
+
+      var cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cell';
+      cell.dataset.key = key;
+      cell.dataset.wd = String(date.getDay());
+      cell.dataset.state = isFuture ? 'future' : (isChecked ? 'checked' : (isToday ? 'today' : 'past'));
+      if (isToday) cell.dataset.today = '1';
+      cell.style.setProperty('--i', String(idx++));
+      cell.innerHTML = '<span class="num">' + day + '</span>';
+
+      if (isChecked) {
+        var numEl = cell.querySelector('.num');
+        numEl.style.background = conicBg(info.cols);
+        var sh = '0 4px 12px ' + rgba(info.cols[0], .35);
+        if (isToday) sh += ', 0 0 0 3px var(--accent-soft)';
+        numEl.style.boxShadow = sh;
+        cell.style.setProperty('--rc', info.cols[0]);
+      }
+      if (key === popKey) {
+        if (popColor) cell.style.setProperty('--rc', popColor);
+        cell.classList.add('pop');
+        cell.addEventListener('animationend', function handler() {
+          this.classList.remove('pop');
+          this.removeEventListener('animationend', handler);
+        });
+      }
+      grid.appendChild(cell);
+    }
+    popKey = null;
+    popColor = null;
+  }
+
+  function render() {
+    renderHeader();
+    renderStats();
+    renderLegend();
+    renderCta();
+    renderCal();
+  }
+
+  /* ---------- 类型选择面板 ---------- */
+  function openSheet(key) {
+    if (strip(parseKey(key)) > TODAY) return;
+    sheetKey = key;
+    renderSheet();
+    sheetMask.classList.add('open');
+  }
+  function closeSheet() {
+    sheetMask.classList.remove('open');
+    sheetKey = null;
+  }
+  function renderSheet() {
+    if (!sheetKey) return;
+    var d = parseKey(sheetKey);
+    var dateStr = (d.getMonth() + 1) + '月' + d.getDate() + '日';
+    var strong = sheetKey === TODAY_KEY ? '今天' : dateStr;
+    var weak = sheetKey === TODAY_KEY ? (dateStr + ' 星期' + WEEK_CN[d.getDay()]) : ('星期' + WEEK_CN[d.getDay()]);
+    sheetTitle.innerHTML = '<b>' + strong + '</b><span>' + weak + '</span>';
+
+    var sel = state.checkins[sheetKey] || [];
+    sheetList.innerHTML = state.types.map(function (t) {
+      var on = sel.indexOf(t.id) >= 0;
+      return '<button type="button" class="type-row' + (on ? ' on' : '') + '" data-id="' + t.id + '"' +
+        ' style="--c:' + t.color + (on ? ';background:' + rgba(t.color, .12) : '') + '">' +
+        '<span class="tr-dot"></span><span class="tr-name">' + esc(t.name) + '</span>' +
+        '<span class="tr-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-10"/></svg></span>' +
+        '</button>';
+    }).join('') + '<button type="button" class="type-row add-row" id="addTypeRow">＋ 新增类型</button>';
+  }
+
+  function toggleType(key, id) {
+    var arr = state.checkins[key] || (state.checkins[key] = []);
+    var i = arr.indexOf(id);
+    var t = typeById(id);
+    if (i >= 0) {
+      arr.splice(i, 1);
+      if (!arr.length) delete state.checkins[key];
+    } else {
+      arr.push(id);
+      popKey = key;
+      popColor = t ? t.color : null;
+    }
+    save();
+    render();
+    renderSheet();
+  }
+
+  function addType() {
+    var name = (window.prompt('新类型名称（最多 6 个字）') || '').trim().slice(0, 6);
+    if (!name) return;
+    for (var i = 0; i < state.types.length; i++) {
+      if (state.types[i].name === name) { showToast('已有同名类型'); return; }
+    }
+    var used = {};
+    state.types.forEach(function (t) { used[t.color] = 1; });
+    var color = PALETTE.filter(function (c) { return !used[c]; })[0] ||
+      PALETTE[state.types.length % PALETTE.length];
+    state.types.push({ id: 't' + Date.now().toString(36), name: name, color: color });
+    save();
+    render();
+    renderSheet();
+    showToast('已新增「' + name + '」');
+  }
+
+  function confirmDelete(id) {
+    var t = typeById(id);
+    if (!t) return;
+    if (!window.confirm('删除「' + t.name + '」及其全部打卡记录？')) return;
+    state.types = state.types.filter(function (x) { return x.id !== id; });
+    Object.keys(state.checkins).forEach(function (k) {
+      state.checkins[k] = (state.checkins[k] || []).filter(function (x) { return x !== id; });
+      if (!state.checkins[k].length) delete state.checkins[k];
+    });
+    save();
+    render();
+    showToast('已删除「' + t.name + '」');
+  }
+
+  /* ---------- 提示 ---------- */
+  var toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1600);
+  }
+
+  /* ---------- 事件 ---------- */
+  grid.addEventListener('click', function (ev) {
+    var cell = ev.target.closest('.cell');
+    if (!cell || !cell.dataset.key) return;
+    openSheet(cell.dataset.key);
+  });
+  grid.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+
+  cta.addEventListener('click', function () { openSheet(TODAY_KEY); });
+
+  $('btnPrev').addEventListener('click', function () {
+    viewM--;
+    if (viewM < 0) { viewM = 11; viewY--; }
+    render();
+  });
+  $('btnNext').addEventListener('click', function () {
+    viewM++;
+    if (viewM > 11) { viewM = 0; viewY++; }
+    render();
+  });
+  $('btnToday').addEventListener('click', function () {
+    viewY = TODAY.getFullYear();
+    viewM = TODAY.getMonth();
+    render();
+  });
+
+  sheetMask.addEventListener('click', function (ev) {
+    if (ev.target === sheetMask) closeSheet();
+  });
+  $('sheetDone').addEventListener('click', closeSheet);
+  sheetList.addEventListener('click', function (ev) {
+    if (ev.target.closest('#addTypeRow')) { addType(); return; }
+    var row = ev.target.closest('.type-row');
+    if (!row || !sheetKey) return;
+    toggleType(sheetKey, row.dataset.id);
+  });
+  sheetList.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+
+  stats.addEventListener('click', function (ev) {
+    if (ev.target.closest('#emptyStat')) addType();
+  });
+
+  // 长按统计卡删除类型
+  var pressTimer = null;
+  function clearPress() {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  }
+  stats.addEventListener('pointerdown', function (ev) {
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    var card = ev.target.closest('.stat');
+    if (!card || !card.dataset.id) return;
+    clearPress();
+    pressTimer = setTimeout(function () {
+      pressTimer = null;
+      confirmDelete(card.dataset.id);
+    }, 550);
+  });
+  stats.addEventListener('pointerup', clearPress);
+  stats.addEventListener('pointerleave', clearPress);
+  stats.addEventListener('pointercancel', clearPress);
+  stats.addEventListener('contextmenu', function (ev) {
+    var card = ev.target.closest('.stat');
+    if (!card || !card.dataset.id) return;
+    ev.preventDefault();
+    clearPress();
+    confirmDelete(card.dataset.id);
+  });
+
+  /* ---------- App 形态 ---------- */
+  if (!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)) {
+    $('installHint').hidden = false;
+  }
+
+  // 内嵌 Web App Manifest：让浏览器提供「安装到桌面」入口
+  try {
+    var ICON = 'data:image/svg+xml,' + encodeURIComponent(
+      "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>" +
+      "<rect width='64' height='64' rx='16' fill='#FF6A00'/>" +
+      "<path d='M18 33l10 10 18-20' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+    );
+    var manifest = {
+      name: '每日打卡',
+      short_name: '打卡',
+      lang: 'zh-CN',
+      start_url: location.href.split('#')[0],
+      scope: location.href.replace(/[^/]*$/, ''),
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#F2F3F5',
+      theme_color: '#FF6A00',
+      icons: [{ src: ICON, sizes: 'any', type: 'image/svg+xml', purpose: 'any' }]
+    };
+    var link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+    document.head.appendChild(link);
+  } catch (e) {}
+
+  render();
+})();
+</script>
+</body>
+</html>
